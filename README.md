@@ -35,4 +35,8 @@ python catalog.py
  
  to boot up the app. From there, you can add categories, add items, or either
  update or delete them. You will need to be logged in before being able to
- perform those actions.
+ perform those actions. Since this application is still in test mode, you will
+ may use this facebook test account to authenticate:
+ 
+ username: 3473362973
+ password: TheKnowledge1!
