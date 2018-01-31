@@ -38,5 +38,5 @@ python catalog.py
  perform those actions. Since this application is still in test mode, you will
  may use this facebook test account to authenticate:
  
- username: 3473362973
- password: TheKnowledge1!
+ username: destinglobalholdings@gmail.com
+ password: Knowledge1
