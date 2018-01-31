@@ -44,12 +44,12 @@
       <div class="col-md-6 offset-md-3">
         <div class="card home-card">
           <div class="card-body">
-            <h2>Are sure you want to delete: {{c.name}}</h2>
-            <form href="{{url_for('delete', category_id=c.id)}}" method='POST'>
+            <h2>Are sure you want to delete: {{i.name}}</h2>
+            <form href="{{url_for('delete_item', category_id=i.category_id, item_id=i.id)}}" method='POST'>
               <button class="btn btn-danger" type='submit'>
                 Delete
               </button>
-              <a class="btn btn-primary" href="{{url_for('show', category_id=c.id)}}">
+              <a class="btn btn-primary" href="{{url_for('show', category_id=i.category_id)}}">
                 Cancel
               </a>
             </form>

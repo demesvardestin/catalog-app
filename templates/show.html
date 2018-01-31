@@ -47,34 +47,36 @@
       </div>
     </nav>
     <div class="row" id="body-row">
-		<div class="col-md-6 offset-md-3">
-			<div class="card home-card">
-				<div class="card-body">
-					<h4 class="dark">{{c.name}}</h4>
-					<h5 class="very-dark">Item List:</h5>
-					<h6>
-						{% for i in items %}
-							<div>
-								<a href="{{url_for('show_item', category_id=c.id, item_id=i.id)}}">
-									{{i.name}}
-								</a>
-							</div>
-						{% endfor %}</br>
-						<div>
-							<a class="btn btn-primary" href="{{url_for('home')}}">
-								Home
-							</a>
-							<a class="btn btn-primary" href="{{url_for('edit', category_id=c.id)}}">
-								Edit
-							</a>
-							<a class="btn btn-primary" href="{{url_for('create_item', category_id=c.id)}}">
-								Add item
-							</a>
-						</div>
-					</h6>
-				</div>
-			</div>
-        </div>
+  		<div class="col-md-6 offset-md-3">
+  			<div class="card home-card">
+  				<div class="card-body">
+  					<h4 class="dark">{{c.name}}</h4>
+  					<h5 class="very-dark">Item List:</h5>
+  					<h6>
+  						{% for i in items %}
+  							<div>
+  								<a href="{{url_for('show_item', category_id=c.id, item_id=i.id)}}">
+  									{{i.name}}
+  								</a>
+  							</div>
+  						{% endfor %}</br>
+  						<div>
+  							<a class="btn btn-primary" href="{{url_for('home')}}">
+  								Home
+  							</a>
+  							<a class="btn btn-primary" href="{{url_for('edit', category_id=c.id)}}">
+  								Edit
+  							</a>
+  							<a class="btn btn-primary" href="{{url_for('create_item', category_id=c.id)}}">
+  								Add item
+  							</a>
+                <a class="btn btn-danger" href="{{url_for('delete', category_id=c.id)}}">
+                  Delete
+                </a>
+  						</div>
+  					</h6>
+  				</div>
+  			</div>
       </div>
     </div>
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>

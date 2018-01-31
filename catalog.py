@@ -25,15 +25,20 @@ session = DBSession()
 @app.route('/')
 @app.route('/home')
 def home():
-    print login_session
+    sesh = session.query(Category)
     categories = session.query(Category).all()
     items = session.query(Item).all()[::-1][:10]
     return render_template('home.html', categories=categories, items=items,
-                            login=login_session)
+                            login=login_session, sesh=sesh)
 
 
 @app.route('/create', methods=['GET', 'POST'])
 def create():
+    """Category create page"""
+    
+    # Confirm that the current user is both authenticated and has proper
+    # authorization
+    
     if 'username' not in login_session:
         flash("You must be logged in to perform this action")
         return redirect(url_for('login'))
@@ -60,7 +65,12 @@ def show(category_id):
 
 @app.route('/category/<int:category_id>/edit/', methods=['GET', 'POST'])
 def edit(category_id):
+    """Category edit page"""
+    
     category = session.query(Category).filter_by(id=category_id).one()
+    
+    # Confirm that the current user is both authenticated and has proper
+    # authorization
     creator = getUserInfo(category.user_id)
     if 'username' not in login_session or creator.id != login_session['user_id']:
         flash("You are not authorized to perform this action")
@@ -77,16 +87,25 @@ def edit(category_id):
 
 @app.route('/category/<int:category_id>/delete', methods=['GET', 'POST'])
 def delete(category_id):
+    """Category delete page"""
+    
     category = session.query(Category).filter_by(id=category_id).one()
+    # Confirm that the current user is both authenticated and has proper
+    # authorization
     creator = getUserInfo(category.user_id)
     if 'username' not in login_session or creator.id != login_session['user_id']:
         flash("You are not authorized to perform this action")
         return redirect(url_for('home'))
     cat = session.query(Category).filter_by(id=category_id).one()
+    items = session.query(Item).filter_by(category_id=cat.id)
     if request.method == 'POST':
         session.delete(cat)
+        # Make sure that each item associated with the category being deleted,
+        # also gets deleted
+        for i in items:
+            session.delete(i)
         session.commit()
-        return redirect(url_for('create'))
+        return redirect(url_for('home'))
     return render_template('delete.html', c=cat, login=login_session)
 
 
@@ -99,7 +118,10 @@ def index():
 
 @app.route('/category/<int:category_id>/create_item', methods=['GET', 'POST'])
 def create_item(category_id):
+    """Crete item page"""
+    
     cat = session.query(Category).filter_by(id=category_id).one()
+    # Confirm that the current user has proper authorization
     if 'username' not in login_session:
         flash("You must be logged in to perform this action")
         return redirect(url_for('login'))
@@ -118,6 +140,9 @@ def create_item(category_id):
 
 @app.route('/category/<int:category_id>/item/<int:item_id>', methods=['GET'])
 def show_item(category_id, item_id):
+    """Item show page"""
+    # Make sure that the item or category in question actually exists in the
+    # database
     try:
         cat = session.query(Category).filter_by(id=category_id).one()
         item = session.query(Item).filter_by(id=item_id).one()
@@ -130,8 +155,12 @@ def show_item(category_id, item_id):
 @app.route('/category/<int:category_id>/item/<int:item_id>/edit',
             methods=['GET', 'POST'])
 def edit_item(category_id, item_id):
+    """Item edit page"""
+    
     item = session.query(Item).filter_by(id=item_id).one()
-    print [u.name for u in session.query(User).all()]
+    
+    # Confirm that the current user is both authenticated and has proper
+    # authorization
     creator = getUserInfo(item.user_id)
     if 'username' not in login_session or creator.id != login_session['user_id']:
         flash("You are not authorized to perform this action")
@@ -147,9 +176,12 @@ def edit_item(category_id, item_id):
     return render_template('edit_item.html', c=cat, i=item, login=login_session)
 
 
-@app.route('/category/<int:category_id>/delete', methods=['GET', 'POST'])
+@app.route('/category/<int:category_id>/item/<int:item_id>/delete', methods=['GET', 'POST'])
 def delete_item(category_id, item_id):
+    """Confirmation page before deleting an item"""
     item = session.query(Item).filter_by(id=item_id).one()
+    # Confirm that the current user is both authenticated and has proper
+    # authorization
     creator = getUserInfo(item.user_id)
     if 'username' not in login_session or creator.id != login_session['user_id']:
         flash("You are not authorized to perform this action")
@@ -157,7 +189,7 @@ def delete_item(category_id, item_id):
     if request.method == 'POST':
         session.delete(item)
         session.commit()
-        return redirect(url_for('index'))
+        return redirect(url_for('show', category_id=category_id))
     return render_template('delete_item.html', i=item, login=login_session)
 
 
@@ -169,13 +201,25 @@ def items_index():
 
 @app.route('/categories/json')
 def categoriesjson():
+    """In order to set up the JSON endpoint, both Category and Item classes in
+    the database have been modified to be serializable. In order to also in-
+    clude the associated items for each category, some custom code could be
+    written."""
+    # First set up an empty array
     json_dict = []
     categories = session.query(Category).all()
+    # Loop through all categories with an index
     for c in range(0, len(categories)-1):
+        # store each category in a variable
         cat = categories[c]
+        # append the serialized category
         json_dict.append(cat.serialize)
+        # create an empty array within the hash as 'Items'
         json_dict[c]['items'] = []
+        # retrieve all items associated with the current category
         items = session.query(Item).filter_by(category_id=cat.id).all()
+        # loop through the items and append the serialized format to the items
+        # array within the hash
         for i in items:
             json_dict[c]['items'].append(i.serialize)
     return jsonify(categories=json_dict)
@@ -191,13 +235,18 @@ def login():
 
 @app.route('/fbconnect', methods=['POST'])
 def fbconnect():
+    # confirm that the token is authentic and originating from where the
+    # request says it is. This is done in order to prevent forgeries and similar
+    # attacks
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
     access_token = request.data
     print "access token received %s " % access_token
-
+    
+    # retrieve the app id and the app secret from the fb clients json filed
+    # in the directory. Then process the GET request using http2lib
     app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
         'web']['app_id']
     app_secret = json.loads(
@@ -210,7 +259,8 @@ def fbconnect():
     # Use token to get user info from API
     userinfo_url = "https://graph.facebook.com/v2.8/me"
     token = result.split(',')[0].split(':')[1].replace('"', '')
-
+    
+    # set up the url
     url = 'https://graph.facebook.com/v2.8/me?access_token=%s&fields=name,id,email' % token
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
@@ -238,29 +288,37 @@ def fbconnect():
     if not user_id:
         user_id = createUser(login_session)
     login_session['user_id'] = user_id
-
+    
+    # append the data into the output
     output = ''
     output += '<h1>Welcome, '
+    # the username
     output += login_session['username']
 
     output += '!</h1>'
+    # the picture
     output += '<img src="'
     output += login_session['picture']
     output += '>'
-
+    # these will be used to confirm that the user has been logged in, displa-
+    # ying the facebook profile photo and the name
     flash("You are now logged in as %s" % login_session['username'])
     return output
 
 
 @app.route('/fbdisconnect')
 def fbdisconnect():
+    """FB disconnect page"""
     facebook_id = login_session['facebook_id']
     # The access token must me included to successfully logout
     access_token = login_session['access_token']
     url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (facebook_id, access_token)
+    # use httplib2 to make the delete request
     h = httplib2.Http()
     result = h.request(url, 'DELETE')[1]
+    # clear the login_session cookie
     login_session.clear()
+    # notify the user that they have been successfully logged out
     flash("You have been logged out!")
     return redirect(url_for('home'))
 
