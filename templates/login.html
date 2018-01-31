@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>The Catalog</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <link rel="stylesheet" type='text/css' href="{{url_for('static', filename='app.css')}}">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+  </head>
+  <style>
+    .dark {
+      color: #9999c1;
+    }
+    .very-dark {
+      color: #5b5b73;
+    }
+    .home-card {
+      margin-top: 10px;
+    }
+    .categories-list {
+      border-right: 2px solid #9999c1;
+    }
+    .light {
+      color: #e0e0ec;
+    }
+    .footer {
+      background: #9999c1;
+      padding: 10px;
+      margin-top: 10px;
+    }
+  </style>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <a class="navbar-brand" href="{{url_for('home')}}">Catalog App</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav">
+          {% if login['username'] and login['username'] != None %}
+            <li class="verydark">Logged in as {{login['username']}}</li>
+            <li class=first><a href="{{url_for('fbdisconnect')}}" class="btn btn-warning">Log Out</a></li>
+          {% else %}
+            <li class=first><a href="{{url_for('login')}}" class="btn btn-secondary">Log In</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </nav>
+    <div class="row" id="body-row">
+      <div class="col-md-6 offset-md-3">
+        <div class="card home-card">
+          <div class="card-body text-center">
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                {% for message in messages %}
+                  <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+            <h4 class="dark">Log in with Facebook</h4></br>
+            <div id="results"><div class="card"><div class="card-body" id="result"></div></div></div>
+            <script>
+              window.fbAsyncInit = function() {
+                $("#results").hide();
+              FB.init({
+                appId      : '146517709346475',
+                cookie     : true,  // enable cookies to allow the server to access 
+                                    // the session
+                xfbml      : true,  // parse social plugins on this page
+                version    : 'v2.2' // use version 2.2
+              });
+              };
+              // Load the SDK asynchronously
+              (function(d, s, id) {
+                var js, fjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) return;
+                js = d.createElement(s); js.id = id;
+                js.src = "//connect.facebook.net/en_US/sdk.js";
+                fjs.parentNode.insertBefore(js, fjs);
+              }(document, 'script', 'facebook-jssdk'));
+              // Here we run a very simple test of the Graph API after login is
+              // successful.  See statusChangeCallback() for when this call is made.
+              function sendTokenToServer() {
+                var access_token = FB.getAuthResponse()['accessToken'];
+                console.log(access_token)
+                console.log('Welcome!  Fetching your information.... ');
+                FB.api('/me', function(response) {
+                  console.log('Successful login for: ' + response.name);
+                 $.ajax({
+                  type: 'POST',
+                  url: '/fbconnect?state={{STATE}}',
+                  processData: false,
+                  data: access_token,
+                  contentType: 'application/octet-stream; charset=utf-8',
+                  success: function(result) {
+                    $("#results").show();
+                    if (result) {
+                      console.log('success')
+                      $('#result').html('<h4 class="dark">Login Successful!</br>'+ result + '</br>Redirecting...</h4>')
+                     setTimeout(function() {
+                      window.location.href = "/home";
+                     }, 4000);
+                      
+                  } else {
+                    console.log('failed')
+                    $('#result').html('We could not log you in at this time. Try again later.');
+                     }
+                  }
+                  
+                  }).fail(function( xhr, status, errorThrown ) {
+                    console.log(errorThrown);
+                    console.log(xhr);
+                  });
+                });
+              }
+            </script>
+            <button>
+              <fb:login-button scope="public_profile,email" onlogin="sendTokenToServer();">
+                <a href='javascript:sendTokenToServer()'>Login with Facebook</a>
+              </fb:login-button>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js" integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4" crossorigin="anonymous"></script>
+    <script src="//apis.google.com/js/platform.js?onload=start"> </script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js">
+    </script>
+    <script src='js/lib/knockout-3.4.2.js'></script>
+    <script src='js/lib/jquery.js'></script>
+    <footer class="footer text-center">
+      <h5>&copy;CatalogApp 2018</h5>
+    </footer>
+  </body>
+</html>
